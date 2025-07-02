@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Edit Contact</title>
+    <style>
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: inline-block;
+            width: 100px;
+        }
+        input, button {
+            padding: 5px;
+        }
+        .error {
+            color: red;
+            display: none;
+        }
+    </style>
+</head>
+<body onload="loadContact()">
+    <h1>Edit Contact</h1>
+    
+    <form id="editContactForm" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="firstname">First Name:</label>
+            <input type="text" id="firstname" name="firstname" required>
+        </div>
+        <div class="form-group">
+            <label for="lastname">Last Name:</label>
+            <input type="text" id="lastname" name="lastname" required>
+        </div>
+        <div class="form-group">
+            <label for="mobile">Mobile:</label>
+            <input type="tel" id="mobile" name="mobile" required>
+        </div>
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+            <label for="avatar">Avatar:</label>
+            <input type="file" id="avatar" name="avatar" accept="image/*">
+            <img id="avatarPreview" src="" width="40" style="display: none;">
+        </div>
+        <button type="submit">Save Changes</button>
+        <button type="button" onclick="window.location='index.html'">Cancel</button>
+        <p id="errorMessage" class="error">Error saving contact</p>
+    </form>
+
+    <script src="config.js"></script>
+    <script>
+        function getContactId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+
+        function loadContact() {
+            const contactId = getContactId();
+            if (!contactId) {
+                window.location = 'index.html';
+                return;
+            }
+
+            fetch(`${rootPath}controller/get-contacts/${contactId}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('firstname').value = data.firstname;
+                    document.getElementById('lastname').value = data.lastname;
+                    document.getElementById('mobile').value = data.mobile;
+                    document.getElementById('email').value = data.email;
+                    if (data.avatar) {
+                        const avatarPreview = document.getElementById('avatarPreview');
+                        avatarPreview.src = `${rootPath}controller/uploads/${data.avatar}`;
+                        avatarPreview.style.display = 'inline';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading contact:', error);
+                    document.getElementById('errorMessage').style.display = 'block';
+                });
+        }
+
+        document.getElementById('editContactForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const contactId = getContactId();
+            const formData = new FormData(this);
+
+            fetch(`${rootPath}controller/update-contact/${contactId}`, {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location = 'index.html';
+                    } else {
+                        document.getElementById('errorMessage').style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating contact:', error);
+                    document.getElementById('errorMessage').style.display = 'block';
+                });
+        });
+
+        document.getElementById('avatar').addEventListener('change', function(e) {
+            const avatarPreview = document.getElementById('avatarPreview');
+            if (e.target.files[0]) {
+                avatarPreview.src = URL.createObjectURL(e.target.files[0]);
+                avatarPreview.style.display = 'inline';
+            }
+        });
+    </script>
+</body>
+</html>
